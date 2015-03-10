@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<!--
+
+    Copyright (c) 2007-2013, Kaazing Corporation. All rights reserved.
+
+-->
+
+   <!--#include virtual="/_header.html"-->
+
+        <div class="main-container">
+            <div class="main wrapper clearfix">
+            
+                <div class="powered-wrapper">
+                    <div class="powered-header"></div>
+                </div>
+                
+                <ul class="breadcrumbs clearfix">
+                   <li><a href="../../index.html">Home</a></li>
+                   <li><a href="../index.html">Documentation</a></li>
+                   <!-- Use li to add more breadcrumbs -->
+                   <li>Secure Your Objective-C Client</li>
+                </ul>
+
+                <article>
+                  <section>
+
+                  <!-- CONTENT GOES HERE -->
+
+<h1>Secure Your Objective-C Client</h1>
+${gateway.ce.client.note}
+
+<p>In this procedure, you will learn how to program your Objective-C client built using the ${gateway.name.long} Objective-C libraries to authenticate with the ${gateway.name.long}. Authenticating your client involves implementing a challenge handler to respond to authentication challenges from the Gateway. If your challenge handler is responsible for obtaining user credentials, then you will also need to implement a login handler.</p>
+
+<p>For information about the ${gateway.name.long} Objective-C Client API, see <a href="../apidoc/client/ios/gateway/index.html">Objective-C Client API</a>.</p>
+
+<span class="note"><b>Notes:</b><br>
+ <ul>
+     <li>Before you add security to your clients, follow the steps in <a href="../security/o_aaa_config_authentication.html">Checklist: Configure Authentication and Authorization</a> to set up security on ${gateway.name.long} for your client. The authentication and authorization methods configured on ${the.gateway} influence your client security implementation. The examples is this topic provide the most common client implementations.</li>
+     <li>For information on secure network connections between clients and ${the.gateway}, see <a href="../security/o_tls.html">Checklist: Secure Network Traffic with the Gateway</a>.</li> 
+ </ul>
+</span>
+
+${objc.secure.links}
+
+<h2>Creating a Basic Challenge Handler</h2>
+<p>A challenge handler is a constructor used in a client to respond to authentication challenges from ${the.gateway} when the client attempts to access a protected resource. Each of the resources protected by ${the.gateway} can be configured with a different authentication scheme (for example, Basic, Application Basic, Negotiate, Application Negotiate, or Application Token), and your client requires a challenge handler for each of the schemes that it will encounter or a single challenge handler that will respond to all challenges.</p>
+
+<p>For information about each authentication scheme type, see <a href="../security/p_aaa_config_authscheme.html">Configure the HTTP Challenge Scheme</a>.</p>
+
+<p>Clients with a single challenge handling strategy for all 401 challenges can simply set a specific challenge handler as the default using <code>KGBasicChallengeHandler</code>. The following is an example of how to implement a single challenge handler for all challenges:</p>
+
+<p><code>KGBasicChallengeHandler* challengeHandler = [KGBasicChallengeHandler create];</code></p>
+
+<p>The preceding example uses static credentials, but you will want to create a login handler to obtain individual user credentials. Here is an example using a login popup that responds when users click a <strong>Connect</strong> button, obtains user credentials, and then responds to the challenge from ${the.gateway}:</p>
+
+<pre class="auto-links: false; brush: java; toolbar: false;">
+#import &quot;KGViewController.h&quot;
+#import &lt;KGWebSocket/WebSocket.h&gt;
+
+//LoginHandler API
+@interface KGDemoLoginHandler : KGLoginHandler
+@end
+
+@implementation KGDemoLoginHandler {
+    UITextField *usernameTextField;
+    UITextField *passwordTextField;
+    NSString    *username;
+    NSString    *password;
+    int         _buttonIndex;
+    dispatch_semaphore_t loginSemaphore;
+}
+
+-(void)dealloc {
+    usernameTextField = nil;
+    passwordTextField = nil;
+    username = nil;
+    password = nil;
+}
+
+- (id)init {
+    self = [super init];
+    return self;
+}
+
+
+-(NSURLCredential*) credentials {
+    _buttonIndex = -1;
+    loginSemaphore = dispatch_semaphore_create(0);
+  
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self popupLogin];
+    });
+  
+    /* 
+    dispatch_semaphore_wait call will decrement the resource count.
+    Since the resulting value is less than zero, this call waits in
+    for a signal to occur before returning.
+    dispatch_semaphore_signal is called when OK or Cancel button
+    is clicked
+    */
+    dispatch_semaphore_wait(loginSemaphore, DISPATCH_TIME_FOREVER);
+  
+    // Release the reference of semaphore to free up the memory
+    dispatch_release(loginSemaphore);
+    // Clicked the Submit button
+    if (_buttonIndex != 0)
+    {
+        return [[NSURLCredential alloc] initWithUser:username password:password
+                persistence:NSURLCredentialPersistenceNone];
+    } else {
+        return nil;
+    }
+}
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    username = usernameTextField.text;
+    password = passwordTextField.text;
+    _buttonIndex = buttonIndex;
+    dispatch_semaphore_signal(loginSemaphore);
+}
+
+- (void) popupLogin {
+    _buttonIndex = -1;
+    UIAlertView *alertview = [[UIAlertView alloc] initWithTitle:@&quot;Please Login:&quot; 
+        message:@&quot;\n \n \n&quot; delegate:self cancelButtonTitle:@&quot;Cancel&quot; 
+        otherButtonTitles:@&quot;OK&quot;, nil];
+
+    // Adds a username Field
+    usernameTextField = [[UITextField alloc] 
+        initWithFrame:CGRectMake(12.0, 45.0, 260.0, 25.0)]; 
+        usernameTextField.placeholder = @&quot;Username&quot;;
+    [usernameTextField becomeFirstResponder];
+    [usernameTextField setBackgroundColor:[UIColor whiteColor]];
+    [usernameTextField setAutocapitalizationType:UITextAutocapitalizationTypeNone];
+    [usernameTextField setText:@&quot;joe&quot;];
+    [alertview addSubview:usernameTextField];
+
+    // Adds a password Field
+    passwordTextField = [[UITextField alloc] 
+        initWithFrame:CGRectMake(12.0, 80.0, 260.0, 25.0)]; 
+        passwordTextField.placeholder = @&quot;Password&quot;;
+    [passwordTextField setSecureTextEntry:YES];
+    [passwordTextField setAutocapitalizationType:UITextAutocapitalizationTypeNone];
+    [passwordTextField setBackgroundColor:[UIColor whiteColor]];
+    [passwordTextField setText:@&quot;welcome&quot;];
+    [alertview addSubview:passwordTextField];
+  
+    // Show alert on screen.
+    [alertview show];
+}
+@end
+
+@implementation KGViewController {
+    
+    KGWebSocket           *_websocket;
+    KGWebSocketFactory    *_factory;
+    BOOL                  _reconnect;
+    
+}
+.
+.
+.
+#pragma mark&lt;Private Methods&gt;
+
+- (KGChallengeHandler *) createBasicChallengeHandler {
+    KGLoginHandler* loginHandler = [[KGDemoLoginHandler alloc] init];
+    KGBasicChallengeHandler* challengeHandler = [KGBasicChallengeHandler create];
+    [challengeHandler setLoginHandler:loginHandler];
+    return challengeHandler;
+}</pre>
+
+<h3>Managing Log In Attempts</h3>
+<p>When it is not possible for the ${gateway.name.long} client to create a challenge response, the client must return <code>nil</code> to ${the.gateway} to stop ${the.gateway} from continuing to issue authentication challenges.</p>
+
+<p>The following example demonstrates how to stop ${the.gateway} from issuing further challenges (look for instances of <code>retry</code> and <code>nil</code>).</p>
+<pre class="auto-links: false; brush: java; toolbar: false;">
+//LoginHandler API:
+@interface KGDemoLoginHandler : KGLoginHandler
+- (int)retry;    // wrong username/password counter
+- (void)setRetry:(int)newValue;
+
+@end
+
+@implementation KGDemoLoginHandler {
+  UITextField *usernameTextField;
+  UITextField *passwordTextField;
+  NSString    *username;
+  NSString    *password;
+  int         _buttonIndex;
+  dispatch_semaphore_t loginSemaphore;
+  int        _retry;
+}
+
+-(void)dealloc {
+  usernameTextField = nil;
+  passwordTextField = nil;
+  username = nil;
+  password = nil;
+}
+
+- (id)init {
+  self = [super init];
+  [self setRetry: 0];
+  return self;
+}
+
+-(NSURLCredential*) credentials {
+  if (_retry++ >= 2) {
+    return nil;      // abort authentication process if reaches max retries (set to 2 in this sample)
+  }
+  _buttonIndex = -1;
+  loginSemaphore = dispatch_semaphore_create(0);
+  
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_6_1) {
+      [self popupLogin_70]; // new UIAlertView code in iOS7
+    } else {
+      [self popupLogin];
+    }
+  });
+  
+  // dispatch_semaphore_wait call will decrement the resource count.
+  // Since the resulting value is less than zero, this call waits in
+  // for a signal to occur before returning.
+  // dispatch_semaphore_signal is called when OK or Cancel button
+  // is clicked
+  dispatch_semaphore_wait(loginSemaphore, DISPATCH_TIME_FOREVER);
+  
+  // Release the reference of semaphore to free up the memory
+  dispatch_release(loginSemaphore);
+  // Clicked the Submit button
+  if (_buttonIndex != 0)
+  {
+    return [[NSURLCredential alloc] 
+      initWithUser:username password:password persistence:NSURLCredentialPersistenceNone];
+  } else {
+    return nil;    // user click cancel button to abort authentication process
+  }
+}
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+  username = usernameTextField.text;
+  password = passwordTextField.text;
+  _buttonIndex = buttonIndex;
+  dispatch_semaphore_signal(loginSemaphore);
+}
+
+- (void) popupLogin {
+  _buttonIndex = -1;
+  UIAlertView *alertview = [[UIAlertView alloc] initWithTitle:@"Please Login:" message:@"\n \n \n" delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
+  // Adds a username Field
+  usernameTextField = [[UITextField alloc] initWithFrame:CGRectMake(12.0, 45.0, 260.0, 25.0)]; usernameTextField.placeholder = @"Username";
+  [usernameTextField becomeFirstResponder];
+  [usernameTextField setBackgroundColor:[UIColor whiteColor]];
+  [usernameTextField setAutocapitalizationType:UITextAutocapitalizationTypeNone];
+  [usernameTextField setText:@"joe"];
+  [alertview addSubview:usernameTextField];
+  // Adds a password Field
+  passwordTextField = [[UITextField alloc] 
+    initWithFrame:CGRectMake(12.0, 80.0, 260.0, 25.0)]; passwordTextField.placeholder = @"Password";
+  [passwordTextField setSecureTextEntry:YES];
+  [passwordTextField setAutocapitalizationType:UITextAutocapitalizationTypeNone];
+  [passwordTextField setBackgroundColor:[UIColor whiteColor]];
+  [passwordTextField setText:@"welcome"];
+  [alertview addSubview:passwordTextField];
+  
+  // Show alert on screen.
+  
+  [alertview show];
+}
+
+- (void) popupLogin_70 {
+  _buttonIndex = -1;
+  UIAlertView *alertview = [[UIAlertView alloc] initWithTitle:@"Please Login:" message:@"\n \n \n" 
+    delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
+  alertview.alertViewStyle = UIAlertViewStyleLoginAndPasswordInput;
+  usernameTextField = [alertview textFieldAtIndex:0];
+  passwordTextField = [alertview textFieldAtIndex:1];
+  [alertview show];
+}
+- (int)retry {
+  return _retry;
+}
+
+- (void)setRetry:(int)newValue {
+  _retry = newValue;
+}
+
+@end
+
+@interface KGViewController ()
+
+@end
+
+@implementation KGViewController {
+  
+  KGWebSocket           *_websocket;
+  KGWebSocketFactory    *_factory;
+  BOOL                  _reconnect;
+  KGDemoLoginHandler    *_loginHandler;
+}
+...
+#pragma mark&lt;Private Methods&gt;
+- (KGChallengeHandler *) createBasicChallengeHandler {
+  _loginHandler = [[KGDemoLoginHandler alloc] init];
+  KGBasicChallengeHandler* challengeHandler = [KGBasicChallengeHandler create];
+  [challengeHandler setLoginHandler:_loginHandler];
+  return challengeHandler;
+}
+...
+// Attach a block to execute when WebSocket connection is established.
+// This indicates that the connection is ready to send and receive data.
+id loginHandler = _loginHandler;    // use a local variable to avoid strong reference
+_websocket.didOpen = ^(KGWebSocket* webSocket) {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [ref log:@"CONNECTED"];
+    [loginHandler setRetry:0];  // reset retry counter
+    [ref updateUIcomponents:YES];
+  });
+};
+...
+// The block to execute when the connection is closed
+_websocket.didClose = ^(KGWebSocket* websocket, NSInteger code, NSString* reason, BOOL wasClean) {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [ref log:[@"CLOSED" stringByAppendingFormat:@"(%i): Reason: %@", code, reason]];
+    [loginHandler setRetry:0];  // reset retry counter
+    [ref updateUIcomponents:NO];
+  });
+};
+...
+@end
+</pre>
+
+<p><span class="note"><b>Note:</b> This example is taken from the out of the box Objective-C demo that is included in the bundle with ${the.gateway}. The demo is located in <span class="uri"><em>GATEWAY_HOME</em>/demo/ios</span>.</span></p>
+
+
+<h2>Next Step</h2>
+<p><a href="p_dev_objc_log.html">Display Logs for the Objective-C Client</a></p>
+
+                  </section>
+                </article>
+
+            </div> <!-- #main -->
+        </div> <!-- #main-container -->
+
+ <!--#include virtual="/_footer.html"-->
+</html>
+

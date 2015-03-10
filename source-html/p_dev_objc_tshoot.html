@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+
+<!--
+
+    Copyright (c) 2007-2013, Kaazing Corporation. All rights reserved.
+
+-->
+
+   <!--#include virtual="/_header.html"-->
+
+        <div class="main-container">
+            <div class="main wrapper clearfix">
+            
+                <div class="powered-wrapper">
+                    <div class="powered-header"></div>
+                </div>
+                
+                <ul class="breadcrumbs clearfix">
+                   <li><a href="../../index.html">Home</a></li>
+                   <li><a href="../index.html">Documentation</a></li>
+                   <!-- Use li to add more breadcrumbs -->
+                   <li>Troubleshoot Your Objective-C Client</li>
+                </ul>
+
+                <article>
+                  <section>
+
+                  <!-- CONTENT GOES HERE -->
+<h1>Troubleshoot Your Objective-C Client</h1>
+${gateway.ce.client.note}
+
+<p>This topic contains descriptions of common errors that might occur when using the Objective-C Client API and provides steps on how to prevent these errors.</p>
+
+<h2>Before You Begin</h2>
+<p>This procedure is part of Checklist: <a href="o_dev_objc.html">Build Objective-C (iOS) WebSocket Clients</a>:</p>
+<ol>
+<li><a href="p_dev_objc_client.html">Use the Objective-C WebSocket Client API</a></li>
+<li><a href="p_dev_objc_secure.html">Secure Your Objective-C Client</a></li>
+<li><a href="p_dev_objc_log.html">Display Logs for the Objective-C Client</a></li>
+<li><strong>Troubleshoot Your Objective-C Client</strong></li>
+</ol>
+
+<!-- <p><span class="note"><b>Note:</b> Learn about supported browsers, operating systems, and platform versions in the ${certification.matrices.inline}.</span></p> -->
+
+<h2><a id="What Problem Are You Having"></a>What Problem Are You Having?</h2>
+<ul class="arrow-2">
+    <li><a href="#problem1">Lexical or Preprocessor Issue: KGWebSocket not found</a></li> 
+    <li><a href="#problem2">Apple Mach-O Linker (Id) Error</a></li> 
+    <li><a href="#problem3">Error: Selector Not Recognized or NSInvalidArgumentException</a></li> 
+</ul>
+
+<h2><a name="problem1" id="problem1"></a>Lexical or Preprocessor Issue: KGWebSocket not found</h2>
+<p><strong>Cause:</strong> This error occurs because Xcode cannot locate the KGWebSocket.framework file that references a header file.</p>
+<p><strong>Solution:</strong> To resolve this error, correct the <strong>Framework Search Paths</strong> setting by performing the following steps:</p>
+<ol>
+    <li><p>Navigate to the location of the ${gateway.name.long} Objective-C framework:</p>
+    <p>The Objective-C framework is available on <a href="http://kaazing.org">kaazing.org</a>.</span></p>
+    <!-- <p>Expand kaazing-ios-library.zip if necessary.</p></li>
+    <li>Double-click the the <strong>KGWebSocket.dmg</strong> image to mount it.</li> -->
+    <li>Drag the <strong>KGWebSocket.framework</strong> file from the mounted volume into the <strong>Frameworks</strong> folder in the Xcode project navigator.</li>
+    <li><p>In the <strong>Choose options for adding these files</strong> dialog that appears, enable the <strong>Copy items into destination group’s folder</strong> checkbox, select your project in <strong>Add to targets</strong>, and click <strong>Finish</strong>.</p>
+    <p>Xcode adds the framework to the project navigator, updates the <strong>Framework Search Paths</strong> setting in <strong>Build Settings</strong> with the path to the framework, and updates the <strong>Link Binary With Libraries</strong> settings in <strong>Build Phases</strong> automatically.</p></li>
+    <p><strong>Note:</strong> You can also choose to add the <strong>KGWebSocket.framework</strong> file into your local <strong>/Library/Frameworks/</strong> folder or a network share before adding it to your project. This is a common practice for managing frameworks.</p>
+    </li>
+</ol>
+
+<h2><a name="problem2" id="problem2"></a>Apple Mach-O Linker (Id) Error</h2>
+<p><strong>Cause:</strong> This error will refer to "undefined symbols" beginning with <span class="uri">_CFHTTP</span>, for example <span class="uri">_CFHTTPMessageAddAuthentication</span>. The error occurs because the Xcode project is missing the CFNetwork.framework file. Clients built using the ${gateway.name.long} Objective-C library also require the CFNetwork.framework.</p>
+
+<p><strong>Solution:</strong> To resolve this error, add CFNetwork.framework by performing the following steps:</p>
+<ol>
+    <li>Click <strong>Build Phases</strong> at the top of the project editor.</li>
+    <li>Open the <strong>Link Binary With Libraries</strong> section.</li>
+    <li>Click the <strong>Add (+)</strong> button to add a library or framework.</li>
+    <li><p>Enter <span class="uri">CFNetwork.framework</span> in the search field. <strong>CFNetwork.framework</strong> is displayed automatically.</p> 
+        <p>If you do not see <strong>CFNetwork.framework</strong>, then you might not have iOS SDK 5.1 or later installed. You can install the SDK as part of the Xcode bundle.</p></li>
+    <li>Select <strong>CFNetwork.framework</strong> and click <strong>Add</strong>. CFNetwork.framework is added to the Xcode project and appears in the Xcode project navigator. You can drag CFNetwork.framework into the <strong>Frameworks</strong> folder.</li>
+</ol>
+
+
+<h2><a name="problem3" id="problem3"></a>Error: Selector Not Recognized or NSInvalidArgumentException</h2>
+<p><strong>Cause:</strong> These errors occur because the Xcode project is linking against an Objective-C static library that contains categories and the <span class="uri">-ObjC</span> value for the <strong>Other Linker Flags</strong> build setting is not configured. Basically, the error occurs when a library extends one of the built-in classes using a category. An example of the Selector Not Recognized error:</p>
+
+<p class="code">[__NSCFConstantString indexOf:]: unrecognized selector sent to instance 0x...</p>
+
+<p>Objective-C does not define linker symbols for each function (or method, in Objective-C). Linker symbols are only generated for each class. If you extend a pre-existing class with categories, the linker does not know to associate the object code of the core class implementation and the category implementation. This prevents objects created in the resulting application from responding to a selector that is defined in the category.  The <span class="uri">-ObjC</span> flag causes the linker to load every object file in the library that defines an Objective-C class or category.</p>
+
+<p>For more information, see <a href="http://developer.apple.com/library/mac/#qa/qa1490/_index.html">Building Objective-C static libraries with categories</a>.</p>
+
+<p><strong>Solution:</strong> To resolve this error, add the <span class="uri">-ObjC</span> value for the <strong>Other Linker Flags</strong> build setting by performing the following steps:</p>
+<ol>
+<li>In the project navigator, select the target to which you want to add a library or framework.</li>
+<li>Click the <strong>Build Settings</strong> tab and scroll down to the <strong>Linking</strong> section.</li>
+<li>In <strong>Other Linker Flags</strong>, add the value <span class="uri">-ObjC</span>.</li>
+</ol>
+
+<span class="note"><b>Note:</b> NSInvalidArgumentException is a constant in the Foundation framework (defined by NSException) and is thrown whenever you pass an invalid argument to a method. Consequently, it might be thrown for reasons other than the missing <span class="uri">-ObjC</span> flag.</span>
+
+<h2>See Also</h2>
+<ul class="arrow-2">
+<li><a href="http://developer.apple.com/library/mac/navigation/#section=Resource%20Types&amp;topic=Technical%20Q%26amp%3BAs">Mac Developer Library Technical Q&amp;As</a></li>
+<li><a href="http://developer.apple.com/library/ios/#documentation/DeveloperTools/Conceptual/InstrumentsUserGuide/Introduction/Introduction.html">Instruments User Guide</a></li>
+<li><a href="http://www.tuaw.com/2011/02/21/how-to-inspect-ioss-http-traffic-without-spending-a-dime/">How to inspect iOS's HTTP traffic without spending a dime</a></li>
+</ul>
+
+
+    
+                  </section>
+                </article>
+
+            </div> <!-- #main -->
+        </div> <!-- #main-container -->
+
+ <!--#include virtual="/_footer.html"-->
+
+</html>

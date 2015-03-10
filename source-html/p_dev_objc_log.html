@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+
+<!--
+
+    Copyright (c) 2007-2013, Kaazing Corporation. All rights reserved.
+
+-->
+
+   <!--#include virtual="/_header.html"-->
+
+        <div class="main-container">
+            <div class="main wrapper clearfix">
+            
+                <div class="powered-wrapper">
+                    <div class="powered-header"></div>
+                </div>
+                
+                <ul class="breadcrumbs clearfix">
+                   <li><a href="../../index.html">Home</a></li>
+                   <li><a href="../index.html">Documentation</a></li>
+                   <!-- Use li to add more breadcrumbs -->
+                   <li>Display Logs for the Objective-C Client</li>
+                </ul>
+
+                <article>
+                  <section>
+
+                  <!-- CONTENT GOES HERE -->
+<h1>Display Logs for the Objective-C Client</h1>
+${gateway.ce.client.note}
+
+<p>In this procedure, you will learn how to gather data on your ${gateway.name.long} Objective-C client.</p>
+
+<h2>Before You Begin</h2>
+<p>This procedure is part of Checklist: <a href="o_dev_objc.html">Build Objective-C (iOS) WebSocket Clients</a>:</p>
+<ol>
+<li><a href="p_dev_objc_client.html">Use the Objective-C WebSocket Client API</a></li>
+<li><a href="p_dev_objc_secure.html">Secure Your Objective-C Client</a></li>
+<li><strong>Display Logs for the Objective-C Client</strong></li>
+<li><a href="p_dev_objc_tshoot.html">Troubleshoot Your Objective-C Client</a></li>
+</ol>
+
+<!-- <p><span class="note"><b>Note:</b> Learn about supported browsers, operating systems, and platform versions in the ${certification.matrices.inline}.</span></p> -->
+
+<h2><a id="logging"></a>To Display Logs for the Objective-C Client</h2>
+<p>
+<ol>
+<li>Build your Objective-C client, as described in <a href="o_dev_objc.html">Checklist: Build Objective-C (iOS) WebSocket Clients</a>.</li>
+<li><p>Add the following line into one of the existing functions, such as <code>viewDidLoad()</code>:</p>
+<p><span class="uri">KGTracerDebug = YES;</span></p>
+<p>For example:</p>
+<pre class="auto-links: false; brush: java; toolbar: false; highlight:[12];">
+- (void)viewDidLoad {
+  [super viewDidLoad];
+  KGTracerDebug = YES;
+}
+</pre>
+</li>
+<li><p>Build your Xcode project, run the Objective-C client in the Xcode Simulator, and perform some actions for the Objective-C client to log.</p>
+<p>The output is displayed in the Xcode Target Output area.</p>
+</li>
+</ol>
+</p>
+
+<h2>Notes</h2>
+<!-- Use "Note" and a paragraph tag when there's only one note -->
+<ul class="arrow-2">
+    <li>If you run the Objective-C client on an iOS device, the logging output is also displayed in <strong>Console</strong> for the device in Xcode Organizer. In Xcode, click <strong>Window</strong>, click <strong>Organizer</strong>, locate the iOS device in <strong>DEVICES</strong>, and click <strong>Console</strong>.</li>
+  <li>See <a href="../apidoc/client/ios/gateway/Classes/KGTracer.html">KGTracer</a> for more information.</li> 
+</ul>
+
+<h2>Next Step</h2>
+<p><a href="p_dev_objc_tshoot.html">Troubleshoot Your Objective-C Client</a></p>
+
+
+
+    
+                  </section>
+                </article>
+
+            </div> <!-- #main -->
+        </div> <!-- #main-container -->
+
+ <!--#include virtual="/_footer.html"-->
+
+</html>
